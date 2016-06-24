@@ -1,0 +1,10 @@
+I you have install the complete version Anaconda for your python, you could install this library by "pip"
+  nltk
+  pynlpir
+  jieba
+
+Ortherwise, this library is also needed:
+  gensim
+  pandas
+  
+Please use the lastest version of such python library.
