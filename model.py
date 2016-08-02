@@ -91,6 +91,28 @@ def train_predicted(train,test,method="l2r",fresh=False):
 		write2file4L2r(features_test, names,flag="test")
 
 		subprocess.call("java -jar lib/RankLib-2.7.jar -train train.LETOR -test test.LETOR  -ranker 6  -kcv 5 -metric2t map  -save mymodel.txt")
+	elif method =="xgb":
+		import xgboost as xgb
+		# train,dev=splitByDf(train)
+		features_train=features_train[names]
+		# features_dev=getFeatureSofQA(dev)
+		features_test =features_test[names]
+
+		dtrain = xgb.DMatrix( features_train, label=train["flag"],weight = np.ones(len(train)))
+		# ddev = xgb.DMatrix( features_dev, label=dev["flag"],weight = np.ones(len(dev)))
+		
+		param = {'bst:max_depth':2, 'bst:eta':0.3, 'silent':1, 'objective':'binary:logistic' }
+		param['nthread'] = 4
+		plst = param.items()
+		# plst += [('eval_metric', 'auc')] # Multiple evals can be handled in this way
+		plst += [('eval_metric', 'map')]
+		evallist  = [(dtrain,'train')]
+		num_round = 30
+		
+		bst = xgb.train( plst, dtrain, num_round, evallist )
+		dtest = xgb.DMatrix( features_test, missing = -999.0 )
+		predicted = bst.predict( dtest)
+		print evaluation.eval(predicted,test)
 	else:
 		print "no method"
 
