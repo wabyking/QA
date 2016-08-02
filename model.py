@@ -40,26 +40,65 @@ def splitData(qa_path,rate=0.8):
 	return splitDatabyDf(df)
 
 
+def LETORformat(row,names,questionDict,flag):
+	line="qid:"+ str(questionDict[row["question"]])+" "
+	if True:#flag=="train":
+		line=str(row["flag"]) +" "+line
+	# line+=str(row["flag"]) +" qid:"+ str(questionDict[row["question"]])+" "
+	features=[str(index+1)+":"+str(row[name]) for index,name in enumerate(names)]
+	return line + " ".join(features)
 
-def train_predicted(train,test):
-	train,names=featureExtract.getFeatureSofQA(train)
-	x=train[names]
-	y=train["flag"]
+def write2file4L2r(	df,names,flag="train"):
+	# lines=df.groupby("question").apply(LETORformat,names=names)
+	questionDict={question:index  for index,question in enumerate(df["question"].unique())}
+	# print questionDict
+
+	lines=df.apply(LETORformat,names=names,questionDict=questionDict,axis=1,flag=flag)
+	lines.to_csv(flag+".LETOR",index=False)
+	# for line in df.iterrow():
+
+	return 0
+
+def l2r(train ,test):
+	features_train,names=getFeatureSofQA(train)
+	write2file4L2r(features_train, names)
+	features_test,names =getFeatureSofQA(test)
+	write2file4L2r(features_test, names,flag="test")
+
+
+def train_predicted(train,test,method="l2r",fresh=False):
 
 	
-	clf = LinearRegression()
-	clf.fit(x, y)
-	print clf.coef_ 
-
-	test,names=featureExtract.getFeatureSofQA(test)
-	test_x=test[names]
+	features_train,names=featureExtract.getFeatureSofQA(train)
 	
-	predicted=clf.predict(test_x)
+
+	features_test,names=featureExtract.getFeatureSofQA(test)
+	
+
+	if method=="lr":
+		x=features_train[names]
+		y=features_train["flag"]
+		test_x=features_test[names]
+		clf = LinearRegression()
+		clf.fit(x, y)
+		print clf.coef_
+		
+		predicted=clf.predict(test_x)
+		print evaluation.eval(predicted,test)
+	elif method=="l2r":
+		
+		write2file4L2r(features_train, names)
+		write2file4L2r(features_test, names,flag="test")
+
+		subprocess.call("java -jar lib/RankLib-2.7.jar -train train.LETOR -test test.LETOR  -ranker 6  -kcv 5 -metric2t map  -save mymodel.txt")
+	else:
+		print "no method"
 
 
-	print evaluation.eval(predicted,test)
 
-	return predicted
+		
+
+
 
 
 
