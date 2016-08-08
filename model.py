@@ -16,8 +16,10 @@ from gensim.models.doc2vec import TaggedLineDocument,Doc2Vec
 from sklearn.linear_model import LogisticRegression ,LinearRegression  
 from sklearn.tree import DecisionTreeClassifier
 import math,re
-import featureExtract
+import platform
+# import featureExtract
 import evaluation
+from sklearn import svm,tree
 def splitDatabyDf(df,rate=0.5):
 	# df=pd.read_csv(qa_path,header=None,sep="\t",names=["question","answer","flag"],quoting =3)
 	#df=done()
@@ -67,19 +69,23 @@ def l2r(train ,test):
 
 
 def train_predicted(train,test,method="l2r",fresh=False):
+	pkl_file="features.pkl"
+	if os.path.exists(pkl_file):
+		features_train,names,features_test,names=pickle.load(open(pkl_file,'r'))
 
-	
-	features_train,names=featureExtract.getFeatureSofQA(train)
-	
-
-	features_test,names=featureExtract.getFeatureSofQA(test)
-	
+	else:
+		import featureExtract
+		features_train,names=featureExtract.getFeatureSofQA(train)
+		features_test,names=featureExtract.getFeatureSofQA(test)
+		pickle.dump((features_train,names,features_test,names),open(pkl_file,"w"))	
 
 	if method=="lr":
 		x=features_train[names]
 		y=features_train["flag"]
 		test_x=features_test[names]
 		clf = LinearRegression()
+		# clf = tree.DecisionTreeRegressor()
+		# clf = svm.SVR()
 		clf.fit(x, y)
 		print clf.coef_
 		
@@ -91,6 +97,7 @@ def train_predicted(train,test,method="l2r",fresh=False):
 		write2file4L2r(features_test, names,flag="test")
 
 		subprocess.call("java -jar lib/RankLib-2.7.jar -train train.LETOR -test test.LETOR  -ranker 6  -kcv 5 -metric2t map  -save mymodel.txt")
+
 	elif method =="xgb":
 		import xgboost as xgb
 		# train,dev=splitByDf(train)
@@ -168,4 +175,6 @@ def main( run_type=3):
 
 if __name__=="__main__":
 
+	
+	 
 	main()	

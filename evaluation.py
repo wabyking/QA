@@ -1,7 +1,8 @@
 import pandas as pd 
 import subprocess
+import platform
 
-qa_path="nlpcc-iccpol-2016.dbqa.testing-data"
+qa_path="data/nlpcc-iccpol-2016.dbqa.testing-data"
 
 def mrr_metric(group):
 	candidates=group.sort_values(by='score',ascending=False).reset_index()
@@ -25,6 +26,11 @@ def evaluation_plus(modelfile, groundtruth=qa_path):
 	print answers.groupby("question").apply(map_metric).mean()
 
 def eval(predicted,groundtruth=qa_path):
+	if  'Windows' in platform.system():
+		modelfile=write2file(predicted)
+		evaluationbyFile(modelfile)
+		return 
+
 	if type(groundtruth)!= str :
 		answers=groundtruth
 	else:
@@ -44,6 +50,6 @@ def write2file(datas,filename="train.QApair.TJU_IR_QA.score"):
 
 
 def evaluationbyFile(modelfile,resultfile="result.text",groundtruth=qa_path):
-	cmd="lib/test.exe " + " ".join([input,modelfile,resultfile])
+	cmd="test.exe " + " ".join([groundtruth,modelfile,resultfile])
 	print modelfile[19:-6]+":" # 
 	subprocess.call(cmd, shell=True)
